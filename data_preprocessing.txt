@@ -1,0 +1,39 @@
+import pandas as pd
+
+def preprocess_dataframe(df):
+    # 轉換資料類型
+    ## 先全部轉類別
+    df = df.astype('category')
+    
+    ## 然後把數值轉回來
+    df[['locdt', 'loctm', 'flam1', 'csmam']] = df[['locdt', 'loctm', 'flam1', 'csmam']].astype('int64')
+    df[['conam', 'iterm']] = df[['conam', 'iterm']].astype('float64')
+
+    ## label 也要轉成數值，不轉模型訓練會出現 error
+    df['label'] = df['label'].astype('int64')
+
+    # 缺失值填充
+    columns_to_fill = ['etymd', 'mcc', 'stocn', 'scity', 'hcefg', 'csmcu']
+    for column in columns_to_fill:
+        df[column] = df[column].cat.add_categories('-1').fillna('-1')
+
+    # 刪除不需要的欄位
+    ## stscd(狀態碼)幾乎全部都是缺失值，也應該不是重要特徵，先就刪掉這欄
+    ## txkey全部都是唯一資料，刪除不用
+    df.drop(['stscd', 'txkey'], axis=1, inplace=True)
+
+    return df
+
+# 讀取資料
+public_df = pd.read_csv('/Users/chunyu/Desktop/ESun_data_project/Other_lgbm_exp/public_processed.csv')
+train_df = pd.read_csv('/Users/chunyu/Desktop/ESun_data_project/Other_lgbm_exp/training.csv')
+
+# 預處理資料
+public_df = preprocess_dataframe(public_df)
+train_df = preprocess_dataframe(train_df)
+
+# 準備上傳用資料(只保留 txkey 欄位df)
+final_df = public_df[['txkey']]
+
+# label 轉成數值，不轉會出現 error
+train_df['label'] = train_df['label'].astype('int64')
